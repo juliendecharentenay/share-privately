@@ -3,23 +3,16 @@
 
 function bufferToBase64url(buffer) {
   const bytes = new Uint8Array(buffer);
-  let str = '';
-  for (const byte of bytes) str += String.fromCharCode(byte);
-  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  return bytes.toBase64({alphabet: 'base64url'});
 }
 
 function base64urlToBuffer(base64url) {
-  const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
-  const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
-  const str = atob(padded);
-  const buffer = new ArrayBuffer(str.length);
-  const bytes = new Uint8Array(buffer);
-  for (let i = 0; i < str.length; i++) bytes[i] = str.charCodeAt(i);
-  return buffer;
+  const bytes = Uint8Array.fromBase64(base64url, {alphabet: 'base64url'});
+  return bytes.buffer;
 }
 
 function bufferToPem(buffer, label) {
-  const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+  const base64 = new Uint8Array(buffer).toBase64()
   const lines = base64.match(/.{1,64}/g).join('\n');
   return `-----BEGIN ${label}-----\n${lines}\n-----END ${label}-----`;
 }
@@ -29,11 +22,8 @@ function pemToBuffer(pem) {
     .replace(/-----BEGIN[^-]*-----/, '')
     .replace(/-----END[^-]*-----/, '')
     .replace(/\s/g, '');
-  const str = atob(base64);
-  const buffer = new ArrayBuffer(str.length);
-  const bytes = new Uint8Array(buffer);
-  for (let i = 0; i < str.length; i++) bytes[i] = str.charCodeAt(i);
-  return buffer;
+  const bytes = Uint8Array.fromBase64(base64);
+  return bytes.buffer;
 }
 
 const RSA_PARAMS = {
