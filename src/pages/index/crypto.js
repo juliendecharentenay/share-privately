@@ -74,18 +74,14 @@ export async function encryptText(text, publicKeyB64url) {
     new TextEncoder().encode(text)
   );
 
-  // Bundle: [2 bytes: encAesKeyLen][encAesKey][12 bytes: iv][ciphertext]
-  const encKeyLen = encryptedAesKey.byteLength;
-  const result = new Uint8Array(2 + encKeyLen + 12 + ciphertext.byteLength);
-  new DataView(result.buffer).setUint16(0, encKeyLen);
-  result.set(new Uint8Array(encryptedAesKey), 2);
-  result.set(iv, 2 + encKeyLen);
-  result.set(new Uint8Array(ciphertext), 2 + encKeyLen + 12);
-
-  return bufferToBase64url(result.buffer);
+  return {
+    ec: bufferToBase64url(ciphertext),
+    ek: bufferToBase64url(encryptedAesKey),
+    iv: bufferToBase64url(iv),
+  };
 }
 
-export async function decryptText(encryptedB64url, privateKeyPem) {
+export async function decryptText(encrypted, privateKeyPem) {
   const privateKey = await crypto.subtle.importKey(
     'pkcs8',
     pemToBuffer(privateKeyPem),
@@ -94,15 +90,12 @@ export async function decryptText(encryptedB64url, privateKeyPem) {
     ['decrypt']
   );
 
-  const data = new Uint8Array(base64urlToBuffer(encryptedB64url));
-  const encKeyLen = new DataView(data.buffer).getUint16(0);
-  const encryptedAesKey = data.slice(2, 2 + encKeyLen);
-  const iv = data.slice(2 + encKeyLen, 2 + encKeyLen + 12);
-  const ciphertext = data.slice(2 + encKeyLen + 12);
+  const encryptedAesKey = base64urlToBuffer(encrypted.ek);
+  const iv = base64urlToBuffer(encrypted.iv);
+  const ciphertext = base64urlToBuffer(encrypted.ec);
 
   // Decrypt the AES key
   const aesKeyBuffer = await crypto.subtle.decrypt(RSA_PARAMS, privateKey, encryptedAesKey);
-
   const aesKey = await crypto.subtle.importKey('raw', aesKeyBuffer, AES_PARAMS, false, ['decrypt']);
 
   // Decrypt the ciphertext
