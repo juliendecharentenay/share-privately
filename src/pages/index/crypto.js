@@ -33,6 +33,11 @@ const RSA_PARAMS = {
   hash: 'SHA-256',
 };
 
+const AES_PARAMS = {
+  name: 'AES-GCM',
+  length: 256,
+};
+
 export async function generateKeyPair() {
   const keyPair = await crypto.subtle.generateKey(RSA_PARAMS, true, ['encrypt', 'decrypt']);
 
@@ -49,22 +54,22 @@ export async function encryptText(text, publicKeyB64url) {
   const publicKey = await crypto.subtle.importKey(
     'spki',
     base64urlToBuffer(publicKeyB64url),
-    { name: 'RSA-OAEP', hash: 'SHA-256' },
+    RSA_PARAMS,
     false,
     ['encrypt']
   );
 
   // Generate ephemeral AES-GCM key
-  const aesKey = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt']);
+  const aesKey = await crypto.subtle.generateKey(AES_PARAMS, true, ['encrypt']);
   const aesKeyBuffer = await crypto.subtle.exportKey('raw', aesKey);
 
   // Encrypt the AES key with RSA-OAEP
-  const encryptedAesKey = await crypto.subtle.encrypt({ name: 'RSA-OAEP' }, publicKey, aesKeyBuffer);
+  const encryptedAesKey = await crypto.subtle.encrypt(RSA_PARAMS, publicKey, aesKeyBuffer);
 
   // Encrypt the plaintext with AES-GCM
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const ciphertext = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
+    {...AES_PARAMS, iv },
     aesKey,
     new TextEncoder().encode(text)
   );
@@ -84,7 +89,7 @@ export async function decryptText(encryptedB64url, privateKeyPem) {
   const privateKey = await crypto.subtle.importKey(
     'pkcs8',
     pemToBuffer(privateKeyPem),
-    { name: 'RSA-OAEP', hash: 'SHA-256' },
+    RSA_PARAMS,
     false,
     ['decrypt']
   );
@@ -96,12 +101,12 @@ export async function decryptText(encryptedB64url, privateKeyPem) {
   const ciphertext = data.slice(2 + encKeyLen + 12);
 
   // Decrypt the AES key
-  const aesKeyBuffer = await crypto.subtle.decrypt({ name: 'RSA-OAEP' }, privateKey, encryptedAesKey);
+  const aesKeyBuffer = await crypto.subtle.decrypt(RSA_PARAMS, privateKey, encryptedAesKey);
 
-  const aesKey = await crypto.subtle.importKey('raw', aesKeyBuffer, { name: 'AES-GCM' }, false, ['decrypt']);
+  const aesKey = await crypto.subtle.importKey('raw', aesKeyBuffer, AES_PARAMS, false, ['decrypt']);
 
   // Decrypt the ciphertext
-  const plaintext = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, aesKey, ciphertext);
+  const plaintext = await crypto.subtle.decrypt({...AES_PARAMS, iv }, aesKey, ciphertext);
 
   return new TextDecoder().decode(plaintext);
 }
