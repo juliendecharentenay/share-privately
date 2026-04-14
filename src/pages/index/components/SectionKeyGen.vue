@@ -12,11 +12,12 @@
         @click="generate"
         :disabled="generating"
         class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-semibold rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed"
+        id="generate-key"
       >
         {{ generating ? 'Generating\u2026' : 'Generate Key Pair' }}
       </button>
 
-      <div v-if="error" class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+      <div v-if="error" class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700" id="error">
         {{ error }}
       </div>
 
@@ -28,12 +29,14 @@
             <button
               @click="downloadPrivateKey"
               class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors cursor-pointer"
+              id="download-private-key"
             >
               Download Private Key
             </button>
             <button
               @click="copyPublicKeyUrl"
               class="inline-flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white text-sm font-medium rounded-lg transition-colors cursor-pointer"
+              id="copy-public-key-url"
             >
               {{ copied ? 'Copied!' : 'Copy Encoding URL' }}
             </button>
@@ -45,6 +48,7 @@
             </p>
             <div
               class="bg-white border border-slate-200 rounded-lg p-3 text-xs break-all text-slate-700 font-mono select-all leading-relaxed"
+              id="public-key-url"
             >
               {{ publicKeyUrl }}
             </div>
@@ -62,8 +66,14 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { generateKeyPair } from '../crypto.js';
+import { ref, computed, inject } from 'vue';
+const props = defineProps({
+  /* Dependency injection */
+  location: { type: Object, default: window.location, },
+  clipboard: { type: Object, default: navigator.clipboard, },
+});
+
+const crypto = inject("crypto");
 
 const generating = ref(false);
 const publicKey = ref('');
@@ -82,7 +92,7 @@ async function generate() {
   publicKey.value = '';
   privateKeyPem.value = '';
   try {
-    const result = await generateKeyPair();
+    const result = await crypto.generateKeyPair();
     publicKey.value = result.publicKey;
     privateKeyPem.value = result.privateKeyPem;
   } catch (e) {
@@ -104,7 +114,7 @@ function downloadPrivateKey() {
 
 async function copyPublicKeyUrl() {
   try {
-    await navigator.clipboard.writeText(publicKeyUrl.value);
+    await props.clipboard.writeText(publicKeyUrl.value);
     copied.value = true;
     setTimeout(() => (copied.value = false), 2000);
   } catch (e) {

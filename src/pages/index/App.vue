@@ -3,7 +3,7 @@
     <!-- Header -->
     <header class="bg-slate-900 text-white py-8 px-6">
       <div class="max-w-3xl mx-auto">
-        <h1 class="text-3xl font-bold tracking-tight">Private Share</h1>
+        <h1 class="text-3xl font-bold tracking-tight">Share Privately</h1>
         <p class="text-slate-400 text-sm mt-1">
           End-to-end encrypted message sharing &mdash; no server, no account
         </p>
@@ -25,7 +25,7 @@
       <SectionIntro />
       <SectionKeyGen />
       <SectionEncode :public-key="publicKey" />
-      <SectionDecode :encrypted-content="encryptedContent" />
+      <SectionDecode :encryptedContent="encryptedContent" />
     </main>
 
     <footer class="border-t border-slate-100 py-8 text-center text-xs text-slate-400">
@@ -35,19 +35,38 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue';
+import { ref, onMounted, nextTick, computed, provide, } from 'vue';
 import SectionIntro from './components/SectionIntro.vue';
 import SectionKeyGen from './components/SectionKeyGen.vue';
 import SectionEncode from './components/SectionEncode.vue';
 import SectionDecode from './components/SectionDecode.vue';
+import * as crypto from './crypto.js';
+
+const props = defineProps({
+  /* Dependency injection */
+  location: { type: Object, default: window.location, },
+  crypto: { type: Object, default: crypto, },
+});
+provide('crypto', props.crypto);
 
 const publicKey = ref('');
-const encryptedContent = ref('');
+const ec = ref('');
+const ek = ref('');
+const iv = ref('');
+const encryptedContent = computed(() => {
+  if (ec.value && ek.value && iv.value) {
+    return { ec: ec.value, ek: ek.value, iv: iv.value };
+  } else {
+    return null;
+  }
+});
 
 onMounted(async () => {
-  const params = new URLSearchParams(window.location.search);
+  const params = new URLSearchParams(props.location.search);
   publicKey.value = params.get('pk') || '';
-  encryptedContent.value = params.get('ec') || '';
+  ec.value = params.get('ec') || '';
+  ek.value = params.get('ek') || '';
+  iv.value = params.get('iv') || '';
 
   if (publicKey.value || encryptedContent.value) {
     await nextTick();

@@ -45,7 +45,8 @@
         {{ decoding ? 'Decoding\u2026' : 'Decode' }}
       </button>
 
-      <div v-if="error" class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+      <div v-if="error" class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+        id="error-message">
         {{ error }}
       </div>
 
@@ -58,11 +59,12 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { decryptText } from '../crypto.js';
+import { ref, computed, inject, } from 'vue';
+
+const crypto = inject("crypto");
 
 const props = defineProps({
-  encryptedContent: { type: String, default: '' },
+  encryptedContent: { type: Object, default: null },
 });
 
 const privateKeyPem = ref('');
@@ -87,7 +89,7 @@ async function decode() {
   error.value = '';
   plaintext.value = '';
   try {
-    plaintext.value = await decryptText(props.encryptedContent, privateKeyPem.value);
+    plaintext.value = await crypto.decryptText(props.encryptedContent, privateKeyPem.value);
   } catch (e) {
     error.value = `Decoding failed: ${e.message}. Make sure you are using the correct private key.`;
   } finally {

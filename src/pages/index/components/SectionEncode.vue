@@ -33,11 +33,13 @@
         @click="encode"
         :disabled="!isActive || !plaintext.trim() || encoding"
         class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-semibold rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed"
+        id="encode-button"
       >
         {{ encoding ? 'Encoding\u2026' : 'Encode' }}
       </button>
 
-      <div v-if="error" class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+      <div v-if="error" class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+        id="error-text">
         {{ error }}
       </div>
 
@@ -53,6 +55,7 @@
         <button
           @click="copyEncodedUrl"
           class="inline-flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white text-sm font-medium rounded-lg transition-colors cursor-pointer"
+          id="copy-encoded-url"
         >
           {{ copied ? 'Copied!' : 'Copy URL' }}
         </button>
@@ -62,11 +65,14 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { encryptText } from '../crypto.js';
+import { ref, computed, inject, } from 'vue';
+
+const crypto = inject("crypto");
 
 const props = defineProps({
   publicKey: { type: String, default: '' },
+  /* Dependency injection */
+  clipboard: { type: Object, default: navigator.clipboard, },
 });
 
 const plaintext = ref('');
@@ -82,7 +88,7 @@ async function encode() {
   error.value = '';
   encodedUrl.value = '';
   try {
-    const encrypted = await encryptText(plaintext.value, props.publicKey);
+    const encrypted = await crypto.encryptText(plaintext.value, props.publicKey);
     encodedUrl.value = `${window.location.origin}${window.location.pathname}?ec=${encrypted}`;
   } catch (e) {
     error.value = `Encoding failed: ${e.message}`;
@@ -93,7 +99,7 @@ async function encode() {
 
 async function copyEncodedUrl() {
   try {
-    await navigator.clipboard.writeText(encodedUrl.value);
+    await props.clipboard.writeText(encodedUrl.value);
     copied.value = true;
     setTimeout(() => (copied.value = false), 2000);
   } catch (e) {
