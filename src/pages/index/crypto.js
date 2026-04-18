@@ -3,11 +3,11 @@
 
 function bufferToBase64url(buffer) {
   const bytes = new Uint8Array(buffer);
-  return bytes.toBase64({alphabet: 'base64url'});
+  return bytes.toBase64();
 }
 
 function base64urlToBuffer(base64url) {
-  const bytes = Uint8Array.fromBase64(base64url, {alphabet: 'base64url'});
+  const bytes = Uint8Array.fromBase64(base64url);
   return bytes.buffer;
 }
 

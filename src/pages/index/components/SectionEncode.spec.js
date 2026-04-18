@@ -1,18 +1,23 @@
-import { describe, it, expect, vi, } from 'vitest';
+import { describe, it, expect, vi, beforeEach, } from 'vitest';
 import { mount, } from '@vue/test-utils';
 import SectionEncode from './SectionEncode.vue';
 
 describe("SectionEncode.vue", () => {
+  let href;
+  beforeEach(() => {
+    href = "http://localhost:8080/index.html?param=banana";
+  });
+
   it("Renders", async () => {
     const crypto = {
-      encryptText: vi.fn(() => Promise.resolve("abc")),
+      encryptText: vi.fn(() => Promise.resolve({ec: "abc"})),
     };
     const clipboard = {
       writeText: vi.fn(() => Promise.resolve()),
     };
     const wrapper = mount(SectionEncode, {
       global: { provide: { crypto, } },
-      props: { clipboard, publicKey: "123", },
+      props: { clipboard, publicKey: "123", href, },
     });
     const textarea = wrapper.find('textarea');
     const encode_button = wrapper.find('#encode-button');
@@ -30,6 +35,7 @@ describe("SectionEncode.vue", () => {
 
     await wrapper.find('#copy-encoded-url').trigger('click');
     expect(clipboard.writeText.mock.calls[0][0]).toContain("ec=abc");
+    expect(clipboard.writeText.mock.calls[0][0]).not.toContain("param=banana");
   });
 
   it("Shows an error if crypto fails", async () => {
@@ -41,7 +47,7 @@ describe("SectionEncode.vue", () => {
     };
     const wrapper = mount(SectionEncode, {
       global: { provide: { crypto, } },
-      props: { clipboard, publicKey: "123", },
+      props: { clipboard, publicKey: "123", href, },
     });
     expect(wrapper.find('#error-text').exists()).toBe(false);
 
@@ -54,14 +60,14 @@ describe("SectionEncode.vue", () => {
 
   it("Shows an error if clipboard fails", async () => {
     const crypto = {
-      encryptText: () => Promise.resolve("abc"),
+      encryptText: vi.fn(() => Promise.resolve({ec: "abc"})),
     };
     const clipboard = {
       writeText: () => Promise.reject(new Error("STOP")),
     };
     const wrapper = mount(SectionEncode, {
       global: { provide: { crypto, } },
-      props: { clipboard, publicKey: "123", },
+      props: { clipboard, publicKey: "123", href, },
     });
     expect(wrapper.find('#error-text').exists()).toBe(false);
 

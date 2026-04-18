@@ -83,7 +83,9 @@ const error = ref('');
 
 const publicKeyUrl = computed(() => {
   if (!publicKey.value) return '';
-  return `${window.location.origin}${window.location.pathname}?pk=${publicKey.value}`;
+  const url = new URL(props.location.href); url.search="";
+  url.searchParams.append("pk", publicKey.value);
+  return url.href;
 });
 
 async function generate() {

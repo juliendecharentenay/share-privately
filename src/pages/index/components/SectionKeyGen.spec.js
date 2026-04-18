@@ -14,6 +14,7 @@ describe("SectionKeyGen.vue", () => {
         location: {
           origin: 'http://localhost:8080',
           pathname: '/index.html',
+          href: 'http://localhost:8080/index.html',
         },
         clipboard,
       },
@@ -44,6 +45,7 @@ describe("SectionKeyGen.vue", () => {
         location: {
           origin: 'http://localhost:8080',
           pathname: '/index.html',
+          href: 'http://localhost:8080/index.html',
         },
         clipboard,
       },
@@ -67,6 +69,7 @@ describe("SectionKeyGen.vue", () => {
         location: {
           origin: 'http://localhost:8080',
           pathname: '/index.html',
+          href: 'http://localhost:8080/index.html',
         },
         clipboard,
       },

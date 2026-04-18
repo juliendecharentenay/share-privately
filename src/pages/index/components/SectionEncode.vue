@@ -73,6 +73,7 @@ const props = defineProps({
   publicKey: { type: String, default: '' },
   /* Dependency injection */
   clipboard: { type: Object, default: navigator.clipboard, },
+  href: { type: String, default: window.location.href, },
 });
 
 const plaintext = ref('');
@@ -89,7 +90,10 @@ async function encode() {
   encodedUrl.value = '';
   try {
     const encrypted = await crypto.encryptText(plaintext.value, props.publicKey);
-    encodedUrl.value = `${window.location.origin}${window.location.pathname}?ec=${encrypted}`;
+    const url = new URL(props.href); url.search = "";
+    Object.entries(encrypted)
+    .forEach(([k, v]) => { url.searchParams.append(k, v); });
+    encodedUrl.value = url.href;
   } catch (e) {
     error.value = `Encoding failed: ${e.message}`;
   } finally {
